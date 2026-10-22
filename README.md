@@ -1,3 +1,14 @@
+---
+title: Autonomous Data Analyst
+emoji: 📊
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+short_description: Upload a dataset, get a full analysis, charts, ML and an AI analyst.
+---
+
 # Autonomous Data Analyst
 
 An AI-powered autonomous data analyst that accepts a dataset (CSV / Excel / JSON), profiles it,
@@ -77,6 +88,41 @@ npm run dev
 
 Then open http://localhost:5173 — Vite's dev server proxies `/api` calls to `localhost:8000`
 (see `frontend/vite.config.js`).
+
+> **Running or deploying?** See [DEPLOY.md](DEPLOY.md) for step-by-step local, Hugging Face Spaces and Vercel + Render instructions.
+
+## AI analyst (optional)
+
+Add an Gemini API key and three tabs light up: **AI Insights** (a briefing plus a root-cause investigator) and **Ask the Analyst** (chat).
+
+```bash
+cp .env.example .env      # then set GEMINI_API_KEY
+docker compose up --build
+```
+
+**The model never does the maths.** It cannot see the raw data; it can only call nine deterministic tools
+(`aggregate`, `time_trend`, `compare_periods`, `correlation`, `detect_anomalies`, `run_model`, ...) implemented in
+`backend/app/llm/tools.py`. Every figure in an answer must come from a tool result.
+
+| Safeguard | What it does |
+|---|---|
+| **Evidence trail** | Every answer lists the calculations behind it (tool, arguments, result table). |
+| **Grounding check** | Figures in the answer are matched against tool output; untraced ones are flagged. A heuristic, not a proof. |
+| **Citation sanitising** | Briefing/root-cause claims must cite real evidence ids; claims without support are shown as *no supporting calculation* and forced to low confidence. |
+| **Partial-period + offsetting guards** | Tools flag half-finished months and segments that cancel each other, two classic ways to misread a trend. |
+| **Injection hardening** | Cell values/column names are treated as data in the prompt; tools are a fixed allow-list (no code or SQL execution). |
+| **Step + size budgets** | Hard cap on tool calls, input length and result size per request. |
+
+Data sent to the provider: the schema and small summaries/samples the model requests through tools (not the full file).
+Use a local/approved deployment if your data cannot leave your environment.
+
+### Tests
+```bash
+cd backend && pip install -r requirements-dev.txt && pytest
+```
+70 tests: tools are verified against a synthetic dataset with a *planted* ground truth and independent pandas oracles;
+the agent loop (error recovery, step budget, sanitising) runs against a scripted client and through the real
+`anthropic` SDK with a mocked HTTP layer. They do **not** call the live API, so answer quality is not covered.
 
 ## How it works
 
