@@ -124,4 +124,3 @@ Natural next steps, roughly in order of effort:
 - SHAP-based explainability for ML feature importance
 - Chat-with-your-dataset (would reintroduce an LLM dependency, by design not included here)
 - Multi-user auth + saved analysis history (would need to replace the in-memory store with Postgres)
-# Auto-ai-data-analyst
